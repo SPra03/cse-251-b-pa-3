@@ -4,4 +4,4 @@ data/*
 *.pkl
 *.csv
 __pycache__/
-
+.idea/*
