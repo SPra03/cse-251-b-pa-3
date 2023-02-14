@@ -1,0 +1,7 @@
+data/*
+*.png
+.DS_STORE
+*.pkl
+*.csv
+__pycache__/
+
