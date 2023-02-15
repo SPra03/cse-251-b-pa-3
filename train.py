@@ -8,6 +8,8 @@ import torchvision.transforms as standard_transforms
 import util
 import numpy as np
 from torch import optim
+import torch.nn.functional as F
+from util import *
 
 class MaskToTensor(object):
     def __call__(self, img):
@@ -52,7 +54,8 @@ fcn_model.apply(init_weights)
 
 device =   "cpu" # TODO determine which device to use (cuda or cpu)
 
-optimizer = optim.Adam(fcn_model.parameters(), lr=0.0001)# TODO choose an optimizer
+# Imp Note!!! Currently Learning rate is kept very high to observe high changes in successive iterations. reduce it in final training
+optimizer = optim.Adam(fcn_model.parameters(), lr=0.01)# TODO choose an optimizer
 criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
 
 fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
@@ -95,6 +98,7 @@ def train():
         if current_miou_score > best_iou_score:
             best_iou_score = current_miou_score
             # save the best model
+            torch.save(fcn_model.state_dict(), "best_model.pth")
     
  #TODO
 def val(epoch):
@@ -105,13 +109,21 @@ def val(epoch):
     accuracy = []
 
     with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
+        epoch_loss = 0
+        num_iter = 0
+        for iter, (inputs, labels) in enumerate(val_loader):
 
-        for iter, (input, label) in enumerate(val_loader):
-            pass
+            outputs = F.log_softmax(fcn_model(inputs), dim=1)
+            valoutputs = fcn_model(inputs)
+            valloss = criterion(valoutputs, labels)
+            epoch_loss += valloss.item()
+            num_iter += 1
+            _, pred = torch.max(outputs, dim=1)
+            mean_iou_scores += [np.mean(iou(pred, labels))]
+            accuracy += [pixel_acc(pred, labels)]
+            losses += [epoch_loss]
 
-
-
-
+    # print(mean_iou_scores, accuracy)
     print(f"Loss at epoch: {epoch} is {np.mean(losses)}")
     print(f"IoU at epoch: {epoch} is {np.mean(mean_iou_scores)}")
     print(f"Pixel acc at epoch: {epoch} is {np.mean(accuracy)}")
@@ -124,13 +136,30 @@ def val(epoch):
 def modelTest():
     fcn_model.eval()  # Put in eval mode (disables batchnorm/dropout) !
 
-
+    losses = []
+    mean_iou_scores = []
+    accuracy = []
 
     with torch.no_grad():  # we don't need to calculate the gradient in the validation/testing
+        epoch_loss = 0
+        num_iter = 0
+        for iter, (inputs, labels) in enumerate(test_loader):
+            
+            outputs = F.log_softmax(fcn_model(inputs), dim=1)
+            valoutputs = fcn_model(inputs)
+            valloss = criterion(valoutputs, labels)
+            epoch_loss += valloss.item()
+            num_iter += 1
+            _, pred = torch.max(outputs, dim=1)
+            mean_iou_scores += [np.mean(iou(pred, labels))]
+            accuracy += [pixel_acc(pred, labels)]
+            losses += [epoch_loss]
 
-        for iter, (input, label) in enumerate(test_loader):
-            pass
-
+    # print(mean_iou_scores, accuracy)
+    print("Test Performance")
+    print(f"Test Loss: is {np.mean(losses)}")
+    print(f"Test IoU: is {np.mean(mean_iou_scores)}")
+    print(f"Test Pixel acc: is {np.mean(accuracy)}")
 
 
     fcn_model.train()  #TURNING THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
@@ -139,9 +168,9 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    # val(0)  # show the accuracy before training
+    val(0)  # show the accuracy before training
     train()
-    # modelTest()
+    modelTest()
 
     # housekeeping
     gc.collect()
