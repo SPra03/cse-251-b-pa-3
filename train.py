@@ -52,7 +52,7 @@ fcn_model.apply(init_weights)
 
 device =   "cpu" # TODO determine which device to use (cuda or cpu)
 
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)# TODO choose an optimizer
+optimizer = optim.Adam(fcn_model.parameters(), lr=0.0001)# TODO choose an optimizer
 criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
 
 fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
@@ -66,15 +66,19 @@ def train():
         ts = time.time()
         for iter, (inputs, labels) in enumerate(train_loader):
             # TODO  reset optimizer gradients
+            optimizer.zero_grad()
 
 
             # both inputs and labels have to reside in the same device as the model's
             inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
-            outputs =  # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
+            outputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
 
-            loss =   #TODO  calculate loss
+            loss =  criterion(outputs,labels)  #TODO  calculate loss
+
+            loss.backward()
+            optimizer.step()
 
             # TODO  backpropagate
 
@@ -103,6 +107,7 @@ def val(epoch):
     with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
 
         for iter, (input, label) in enumerate(val_loader):
+            pass
 
 
 
@@ -124,6 +129,7 @@ def modelTest():
     with torch.no_grad():  # we don't need to calculate the gradient in the validation/testing
 
         for iter, (input, label) in enumerate(test_loader):
+            pass
 
 
 

@@ -33,11 +33,21 @@ def make_dataset(mode):
             item = (os.path.join(img_path, it + '.jpg'), os.path.join(mask_path, it + '.png'))
             items.append(item)
     elif mode == 'val':
-        #TODO
-        pass
+        img_path = os.path.join(root, 'VOCdevkit', 'VOC2007', 'JPEGImages')
+        mask_path = os.path.join(root, 'VOCdevkit', 'VOC2007', 'SegmentationClass')
+        data_list = [l.strip('\n') for l in open(os.path.join(
+            root, 'VOCdevkit', 'VOC2007', 'ImageSets', 'Segmentation', 'val.txt')).readlines()]
+        for it in data_list:
+            item = (os.path.join(img_path, it + '.jpg'), os.path.join(mask_path, it + '.png'))
+            items.append(item)
     else:
-        # TODO FOR TEST SET
-        pass
+        img_path = os.path.join(root, 'VOCdevkit', 'VOC2007', 'JPEGImages')
+        mask_path = os.path.join(root, 'VOCdevkit', 'VOC2007', 'SegmentationClass')
+        data_list = [l.strip('\n') for l in open(os.path.join(
+            root, 'VOCdevkit', 'VOC2007', 'ImageSets', 'Segmentation', 'test.txt')).readlines()]
+        for it in data_list:
+            item = (os.path.join(img_path, it + '.jpg'), os.path.join(mask_path, it + '.png'))
+            items.append(item)
     return items
 
 
@@ -53,7 +63,7 @@ class VOC(data.Dataset):
         self.height = 224
 
     def __getitem__(self, index):
-
+        
         img_path, mask_path = self.imgs[index]
         img = Image.open(img_path).convert('RGB').resize((self.width, self.height))
         mask = Image.open(mask_path).resize((self.width, self.height))
