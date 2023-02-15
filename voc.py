@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 from torch.utils import data
+import torchvision.transforms as transforms
 
 num_classes = 21
 ignore_label = 255
@@ -33,8 +34,10 @@ def make_dataset(mode):
             items.append(item)
     elif mode == 'val':
         #TODO
+        pass
     else:
         # TODO FOR TEST SET
+        pass
     return items
 
 
@@ -66,3 +69,8 @@ class VOC(data.Dataset):
 
     def __len__(self):
         return len(self.imgs)
+
+
+if __name__=="__main__":
+    voc = VOC("train")
+    print(len(voc))

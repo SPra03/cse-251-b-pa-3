@@ -7,6 +7,7 @@ import voc
 import torchvision.transforms as standard_transforms
 import util
 import numpy as np
+from torch import optim
 
 class MaskToTensor(object):
     def __call__(self, img):
@@ -49,12 +50,12 @@ n_class = 21
 fcn_model = FCN(n_class=n_class)
 fcn_model.apply(init_weights)
 
-device =   # TODO determine which device to use (cuda or cpu)
+device =   "cpu" # TODO determine which device to use (cuda or cpu)
 
-optimizer = # TODO choose an optimizer
-criterion =  # TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)# TODO choose an optimizer
+criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
 
-fcn_model =  # TODO transfer the model to the device
+fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
 
 
 # TODO
@@ -68,8 +69,8 @@ def train():
 
 
             # both inputs and labels have to reside in the same device as the model's
-            inputs =  inputs.to()# TODO transfer the input to the same device as the model's
-            labels =   # TODO transfer the labels to the same device as the model's
+            inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
+            labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
             outputs =  # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
 
@@ -132,9 +133,9 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    val(0)  # show the accuracy before training
+    # val(0)  # show the accuracy before training
     train()
-    modelTest()
+    # modelTest()
 
     # housekeeping
     gc.collect()
