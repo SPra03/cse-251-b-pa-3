@@ -84,6 +84,8 @@ def early_stopping(model, iter_num, early_stopping_rounds, best_loss, best_acc, 
 
 # TODO
 def train():
+
+    torch.autograd.set_detect_anomaly(True)
     
     best_iou_score = 0.0
 
@@ -93,8 +95,19 @@ def train():
         best_acc = -1
         best_iter = 0
 
+    trainEpochLoss = []
+    trainEpochAccuracy = []
+    trainEpochIOU = []
+    valEpochLoss = []
+    valEpochAccuracy = []
+    valEpochIOU = []
 
     for epoch in range(epochs):
+
+        train_loss = []
+        train_acc = []
+        train_iou = []
+
         ts = time.time()
         for iter, (inputs, labels) in enumerate(train_loader):
             # TODO  reset optimizer gradients
@@ -105,17 +118,20 @@ def train():
             inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
-            outputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
-
-            loss =  criterion(outputs,labels)  #TODO  calculate loss
-
+            trainOutputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
+            loss =  criterion(trainOutputs,labels)  #TODO  calculate loss
             loss.backward()
+
+            with torch.no_grad():
+                # To compute accuracy and IOU
+                # outputs = F.log_softmax(fcn_model(inputs), dim=1)
+                _, pred = torch.max(trainOutputs, dim=1)
+                
+                train_iou += [np.mean(iou(pred, labels))]
+                train_acc += [pixel_acc(pred, labels)]
+                train_loss.append(loss.item())
+
             optimizer.step()
-
-            # TODO  backpropagate
-
-            # TODO  update the weights
-
 
             if iter % 10 == 0:
                 print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
@@ -131,11 +147,17 @@ def train():
             if patience==0:
                 print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
+        
+        ##### Plotting values
+        trainEpochLoss.append(np.mean(np.asarray(train_loss)))
+        trainEpochIOU.append(np.mean(np.asarray(train_iou)))
+        trainEpochAccuracy.append(np.mean(train_acc))
+        valEpochLoss.append(val_loss)
+        valEpochIOU.append(val_iou)
+        valEpochAccuracy.append(val_acc)
 
-        # if current_miou_score > best_iou_score:
-        #     best_iou_score = current_miou_score
-        #     # save the best model
-        #     torch.save(fcn_model.state_dict(), "best_model.pth")
+    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter)
+
     
  #TODO
 def val(epoch):
@@ -214,7 +236,7 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    val(0)  # show the accuracy before training
+    # val(0)  # show the accuracy before training
     train()
 
     print("Loading Best model from best_model.pth as per the IOU score and patience level defined for early stopping..")
