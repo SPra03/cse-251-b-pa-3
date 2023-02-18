@@ -52,7 +52,10 @@ n_class = 21
 fcn_model = FCN(n_class=n_class)
 fcn_model.apply(init_weights)
 
-device =   "cpu" # TODO determine which device to use (cuda or cpu)
+device = "cpu"
+if torch.cuda.is_available():
+    device =   "cuda" # TODO determine which device to use (cuda or cpu)
+print("Using device: ", device)
 
 # Imp Note!!! Currently Learning rate is kept very high to observe high changes in successive iterations. reduce it in final training
 optimizer = optim.Adam(fcn_model.parameters(), lr=0.01)# TODO choose an optimizer
@@ -112,6 +115,11 @@ def val(epoch):
         epoch_loss = 0
         num_iter = 0
         for iter, (inputs, labels) in enumerate(val_loader):
+            
+            # both inputs and labels have to reside in the same device as the model's
+            inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
+            labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
+
 
             outputs = F.log_softmax(fcn_model(inputs), dim=1)
             valoutputs = fcn_model(inputs)
@@ -145,6 +153,10 @@ def modelTest():
         num_iter = 0
         for iter, (inputs, labels) in enumerate(test_loader):
             
+            # both inputs and labels have to reside in the same device as the model's
+            inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
+            labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
+
             outputs = F.log_softmax(fcn_model(inputs), dim=1)
             valoutputs = fcn_model(inputs)
             valloss = criterion(valoutputs, labels)
