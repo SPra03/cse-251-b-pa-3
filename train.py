@@ -129,7 +129,7 @@ def train():
                                                                 best_iter, val_loss, val_acc, val_iou, patience)
             print(f"Patience = {patience}")
             if patience==0:
-                print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou = {best_iou}, best_iteration={best_iter}")
+                print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
 
         # if current_miou_score > best_iou_score:
