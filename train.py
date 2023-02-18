@@ -63,10 +63,36 @@ criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss functio
 
 fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
 
+#################################### Early stopping algorithm
+use_early_stopping = True
+early_stopping_rounds_const = 5 # aka Patience
+
+def early_stopping(model, iter_num, early_stopping_rounds, best_loss, best_acc, best_iou, best_iter, loss, acc, iou_score, patience):
+    if iou_score<=best_iou:
+        patience-=1
+    else:
+        torch.save(fcn_model.state_dict(), "best_model.pth")
+        patience = early_stopping_rounds
+        best_loss = loss
+        best_acc = acc
+        best_iou = iou_score
+        best_iter = iter_num
+
+    return best_loss, best_acc, best_iou, best_iter, patience
+
+#################################### Early stopping algorithm end
 
 # TODO
 def train():
+    
     best_iou_score = 0.0
+
+    if use_early_stopping:
+        patience = 5
+        best_loss = 1e9
+        best_acc = -1
+        best_iter = 0
+
 
     for epoch in range(epochs):
         ts = time.time()
@@ -96,12 +122,20 @@ def train():
 
         print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
 
-        current_miou_score = val(epoch)
+        val_loss, val_iou, val_acc = val(epoch)
+        
+        if use_early_stopping:
+            best_loss, best_acc, best_iou_score, best_iter, patience = early_stopping(fcn_model, epoch, early_stopping_rounds_const, best_loss, best_acc, best_iou_score,
+                                                                best_iter, val_loss, val_acc, val_iou, patience)
+            print(f"Patience = {patience}")
+            if patience==0:
+                print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou = {best_iou}, best_iteration={best_iter}")
+                break
 
-        if current_miou_score > best_iou_score:
-            best_iou_score = current_miou_score
-            # save the best model
-            torch.save(fcn_model.state_dict(), "best_model.pth")
+        # if current_miou_score > best_iou_score:
+        #     best_iou_score = current_miou_score
+        #     # save the best model
+        #     torch.save(fcn_model.state_dict(), "best_model.pth")
     
  #TODO
 def val(epoch):
@@ -138,7 +172,7 @@ def val(epoch):
 
     fcn_model.train() #TURNING THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
 
-    return np.mean(mean_iou_scores)
+    return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
  #TODO
 def modelTest():
@@ -182,6 +216,10 @@ if __name__ == "__main__":
 
     val(0)  # show the accuracy before training
     train()
+
+    print("Loading Best model from best_model.pth as per the IOU score and patience level defined for early stopping..")
+    fcn_model.load_state_dict(torch.load("best_model.pth"))
+
     modelTest()
 
     # housekeeping
