@@ -82,9 +82,9 @@ def getClassWeights(train_dataset):
         # print(f"Class {c}: {frequency}")
 
     imbalance_freq = np.array(list(class_pixel_counts.values()))
-    print(imbalance_freq)
-    imbalance_weights = np.sum(imbalance_freq)/imbalance_freq
-    imbalance_weights = imbalance_weights/np.sum(imbalance_weights)
+    # print(imbalance_freq)
+    imbalance_weights = 1-imbalance_freq/np.sum(imbalance_freq)
+    # imbalance_weights = imbalance_weights/np.sum(imbalance_weights)
     print("Imbalance weights are: ", imbalance_weights)
 
     return imbalance_weights
@@ -102,6 +102,7 @@ class WeightedCrossEntropyLoss(nn.Module):
 
 if use_weights:
     imbalance_weights = getClassWeights(train_dataset)
+    imbalance_weights = torch.Tensor(imbalance_weights).to(device)
     criterion = WeightedCrossEntropyLoss(weight=torch.Tensor(imbalance_weights))
 else:
     criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
