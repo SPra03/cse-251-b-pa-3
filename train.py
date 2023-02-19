@@ -5,6 +5,7 @@ import torch
 import gc
 import voc
 import torchvision.transforms as standard_transforms
+import torchvision.transforms as transforms
 import util
 import numpy as np
 from torch import optim
@@ -23,19 +24,22 @@ def init_weights(m):
 
 
 
-#TODO Get class weights
-def getClassWeights():
-
-    raise NotImplementedError
-
-
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-input_transform = standard_transforms.Compose([
-        standard_transforms.ToTensor(),
-        standard_transforms.Normalize(*mean_std)
-    ])
 
-target_transform = MaskToTensor()
+input_transform = transforms.Compose([
+    transforms.RandomCrop(224),
+    transforms.RandomHorizontalFlip(),
+    standard_transforms.RandomRotation(10),            # rotation
+    transforms.ToTensor(),
+    transforms.Normalize(*mean_std)
+])
+
+target_transform = transforms.Compose([
+    transforms.RandomCrop(224),
+    transforms.RandomHorizontalFlip(),
+    standard_transforms.RandomRotation(10),            # rotation
+    MaskToTensor(),
+])
 
 train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform)
 val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
@@ -59,7 +63,50 @@ print("Using device: ", device)
 
 # Imp Note!!! Currently Learning rate is kept very high to observe high changes in successive iterations. reduce it in final training
 optimizer = optim.Adam(fcn_model.parameters(), lr=0.01)# TODO choose an optimizer
-criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+
+#################################### Loss criterion
+
+def getClassWeights(train_dataset):
+        # Define a dictionary to store the pixel counts for each class
+    class_pixel_counts = {i: 0 for i in range(n_class)}
+
+    # Iterate over the train dataset and count the number of pixels for each class in the mask
+    for i in range(len(train_dataset)):
+        img, mask = train_dataset[i]
+        for c in range(n_class):
+            class_pixel_counts[c] += torch.sum(mask == c)
+
+    # Print the frequency for each class
+    # for c in range(n_class):
+    #     frequency = class_pixel_counts[c] / torch.sum(torch.Tensor(list(class_pixel_counts.values())))
+        # print(f"Class {c}: {frequency}")
+
+    imbalance_freq = np.array(list(class_pixel_counts.values()))
+    print(imbalance_freq)
+    imbalance_weights = np.sum(imbalance_freq)/imbalance_freq
+    imbalance_weights = imbalance_weights/np.sum(imbalance_weights)
+    print("Imbalance weights are: ", imbalance_weights)
+
+    return imbalance_weights
+
+use_weights = True
+
+class WeightedCrossEntropyLoss(nn.Module):
+    def __init__(self, weight=None):
+        super().__init__()
+        self.weight = weight
+
+    def forward(self, input, target):
+        loss = F.cross_entropy(input, target, weight=self.weight)
+        return loss
+
+if use_weights:
+    imbalance_weights = getClassWeights(train_dataset)
+    criterion = WeightedCrossEntropyLoss(weight=torch.Tensor(imbalance_weights))
+else:
+    criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+
+#####################
 
 fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
 
