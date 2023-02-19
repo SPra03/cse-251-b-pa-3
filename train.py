@@ -103,7 +103,7 @@ class WeightedCrossEntropyLoss(nn.Module):
 if use_weights:
     imbalance_weights = getClassWeights(train_dataset)
     imbalance_weights = torch.Tensor(imbalance_weights).to(device)
-    criterion = WeightedCrossEntropyLoss(weight=torch.Tensor(imbalance_weights))
+    criterion = WeightedCrossEntropyLoss(weight=imbalance_weights)
 else:
     criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
 
