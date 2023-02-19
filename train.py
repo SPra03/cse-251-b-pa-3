@@ -148,6 +148,7 @@ def train():
     valEpochLoss = []
     valEpochAccuracy = []
     valEpochIOU = []
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=0, last_epoch=-1)
 
     for epoch in range(epochs):
 
@@ -194,6 +195,7 @@ def train():
             if patience==0:
                 print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
+        scheduler.step()
         
         ##### Plotting values
         trainEpochLoss.append(np.mean(np.asarray(train_loss)))
