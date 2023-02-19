@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import os
 
 def iou(pred, target, n_classes = 21):
     target[target==255] = 0
@@ -30,9 +31,12 @@ def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEp
     Helper function for creating the plots
     earlyStop is the epoch at which early stop occurred and will correspond to the best model. e.g. earlyStop=-1 means the last epoch was the best one
     """
-
+    
     saveLocation = "./plots/"
-
+    if not os.path.exists(saveLocation):
+        os.makedirs(saveLocation)
+        print("Created Plots directory.")
+    
     fig1, ax1 = plt.subplots(figsize=((24, 12)))
     epochs = np.arange(1,len(trainEpochLoss)+1,1)
     ax1.plot(epochs, trainEpochLoss, 'r', label="Training Loss")

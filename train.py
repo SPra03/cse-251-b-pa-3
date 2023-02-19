@@ -11,6 +11,7 @@ import numpy as np
 from torch import optim
 import torch.nn.functional as F
 from util import *
+# from torch.profiler import profile, record_function, ProfilerActivity
 
 class MaskToTensor(object):
     def __call__(self, img):
@@ -23,7 +24,7 @@ def init_weights(m):
         torch.nn.init.normal_(m.bias.data) #xavier not applicable for biases
 
 
-
+################################ Dataset Loading and processing
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
 input_transform = transforms.Compose([
@@ -45,9 +46,14 @@ train_dataset =voc.VOC('train', transform=input_transform, target_transform=targ
 val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
 test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
 
-train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False)
-test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False)
+# Parameters to optimize the dataset loading, which was the slowest step
+NUM_WORKERS = 4
+PREFETCH_FACTOR = 2 # improves data transfer speed between GPU and CPU and reduces GPU wait time
+train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+
+################################ Dataset Loading and processing end
 
 epochs =20
 
@@ -153,6 +159,7 @@ def train():
 
     for epoch in range(epochs):
 
+        # with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
         train_loss = []
         train_acc = []
         train_iou = []
@@ -183,7 +190,9 @@ def train():
             optimizer.step()
 
             if iter % 10 == 0:
-                print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
+                print(f"==> epoch{epoch}, iter{iter}, Train set=> loss: {train_loss[-1]}, IOU: {train_iou[-1]}, Acc: {train_acc[-1]}")
+
+        # print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
 
         print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
 
@@ -194,7 +203,7 @@ def train():
                                                                 best_iter, val_loss, val_acc, val_iou, patience)
             print(f"Patience = {patience}")
             if patience==0:
-                print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
+                print(f"==> Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
         scheduler.step()
         
@@ -238,9 +247,9 @@ def val(epoch):
             losses += [epoch_loss]
 
     # print(mean_iou_scores, accuracy)
-    print(f"Loss at epoch: {epoch} is {np.mean(losses)}")
-    print(f"IoU at epoch: {epoch} is {np.mean(mean_iou_scores)}")
-    print(f"Pixel acc at epoch: {epoch} is {np.mean(accuracy)}")
+    print(f"=========> Loss at epoch {epoch} is {np.mean(losses)}")
+    print(f"=========> IoU at epoch {epoch} is {np.mean(mean_iou_scores)}")
+    print(f"=========> Pixel acc at epoch {epoch} is {np.mean(accuracy)}")
 
     fcn_model.train() #TURNING THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
 
