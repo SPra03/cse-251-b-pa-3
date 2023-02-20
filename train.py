@@ -55,7 +55,7 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, nu
 
 ################################ Dataset Loading and processing end
 
-epochs =20
+epochs = 50
 
 n_class = 21
 
@@ -68,7 +68,7 @@ if torch.cuda.is_available():
 print("Using device: ", device)
 
 # Imp Note!!! Currently Learning rate is kept very high to observe high changes in successive iterations. reduce it in final training
-optimizer = optim.Adam(fcn_model.parameters(), lr=0.01)# TODO choose an optimizer
+optimizer = optim.Adam(fcn_model.parameters(), lr=0.005)# TODO choose an optimizer
 
 #################################### Loss criterion
 
@@ -155,7 +155,7 @@ def train():
     valEpochLoss = []
     valEpochAccuracy = []
     valEpochIOU = []
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=0, last_epoch=-1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30, eta_min=0, last_epoch=-1)
 
     for epoch in range(epochs):
 
@@ -175,6 +175,7 @@ def train():
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
             trainOutputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
+            trainOutputs = F.softmax(trainOutputs)
             loss =  criterion(trainOutputs,labels)  #TODO  calculate loss
             loss.backward()
 
@@ -206,6 +207,7 @@ def train():
                 print(f"==> Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
         scheduler.step()
+        print(f"Scheduler Learning Rate: {scheduler.get_last_lr()}")
         
         ##### Plotting values
         trainEpochLoss.append(np.mean(np.asarray(train_loss)))
@@ -227,7 +229,6 @@ def val(epoch):
     accuracy = []
 
     with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
-        epoch_loss = 0
         num_iter = 0
         for iter, (inputs, labels) in enumerate(val_loader):
             
@@ -236,15 +237,15 @@ def val(epoch):
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
 
-            outputs = F.log_softmax(fcn_model(inputs), dim=1)
-            valoutputs = fcn_model(inputs)
-            valloss = criterion(valoutputs, labels)
-            epoch_loss += valloss.item()
+            outputs = F.softmax(fcn_model(inputs), dim=1)
+#             valoutputs = fcn_model(inputs)
+            valloss = criterion(outputs, labels)
+            
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)
             mean_iou_scores += [np.mean(iou(pred, labels))]
             accuracy += [pixel_acc(pred, labels)]
-            losses += [epoch_loss]
+            losses += [valloss.item()]
 
     # print(mean_iou_scores, accuracy)
     print(f"=========> Loss at epoch {epoch} is {np.mean(losses)}")
@@ -272,9 +273,9 @@ def modelTest():
             inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
-            outputs = F.log_softmax(fcn_model(inputs), dim=1)
-            valoutputs = fcn_model(inputs)
-            valloss = criterion(valoutputs, labels)
+            outputs = F.softmax(fcn_model(inputs), dim=1)
+#             valoutputs = fcn_model(inputs)
+            valloss = criterion(outputs, labels)
             epoch_loss += valloss.item()
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)
@@ -295,7 +296,7 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    # val(0)  # show the accuracy before training
+    val(0)  # show the accuracy before training
     train()
 
     print("Loading Best model from best_model.pth as per the IOU score and patience level defined for early stopping..")
