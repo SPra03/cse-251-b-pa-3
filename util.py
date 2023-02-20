@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 import os
 
+# Average over classes
 def iou(pred, target, n_classes = 21):
     target[target==255] = 0
 
@@ -17,6 +18,34 @@ def iou(pred, target, n_classes = 21):
 
     ious = np.array(ious)
     return ious
+
+#  Average over images
+# def iou(pred, target, n_classes = 21):
+#     target[target==255] = 0
+
+#     image_ious = []
+
+#     for img in range(pred.shape[0]):
+
+#         ious = []
+
+#         pred_img = pred[img, :, :]
+#         target_img = target[img, :, :]
+
+#         for cls in range(n_classes):
+#             intersection = torch.sum((pred_img == cls) & (target_img == cls)).item()# TP
+#             union = torch.sum(pred_img == cls) + torch.sum(target_img == cls) - intersection# (TP + FP) + (TP + FN) - TP
+#             union = union.item()
+
+#             if torch.sum(pred_img == cls)!=0:
+#                 ious.append(intersection/union)
+        
+#         ious = np.array(ious)
+#         image_ious.append(np.mean(ious))
+#     image_ious = np.array(image_ious)
+
+#     return image_ious
+
 
 def pixel_acc(pred, target):
     target[target==255] = 0

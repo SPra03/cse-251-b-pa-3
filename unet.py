@@ -271,7 +271,7 @@ def val(epoch):
 
     return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
- #TODO
+# TODO
 def modelTest():
     fcn_model.eval()  # Put in eval mode (disables batchnorm/dropout) !
 
@@ -280,7 +280,6 @@ def modelTest():
     accuracy = []
 
     with torch.no_grad():  # we don't need to calculate the gradient in the validation/testing
-        epoch_loss = 0
         num_iter = 0
         for iter, (inputs, labels) in enumerate(test_loader):
             
@@ -291,12 +290,11 @@ def modelTest():
             outputs = F.softmax(fcn_model(inputs), dim=1)
 #             valoutputs = fcn_model(inputs)
             valloss = criterion(outputs, labels)
-            epoch_loss += valloss.item()
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)
             mean_iou_scores += [np.mean(iou(pred, labels))]
             accuracy += [pixel_acc(pred, labels)]
-            losses += [epoch_loss]
+            losses += [valloss.item()]
 
     # print(mean_iou_scores, accuracy)
     print("Test Performance")
