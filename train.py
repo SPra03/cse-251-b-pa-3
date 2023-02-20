@@ -55,6 +55,8 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, nu
 
 ################################ Dataset Loading and processing end
 
+plotdir = "baseline/"
+
 epochs = 50
 
 n_class = 21
@@ -217,7 +219,7 @@ def train():
         valEpochIOU.append(val_iou)
         valEpochAccuracy.append(val_acc)
 
-    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter)
+    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation=plotdir)
 
     
  #TODO

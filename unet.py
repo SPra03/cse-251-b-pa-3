@@ -232,7 +232,7 @@ def train():
         valEpochIOU.append(val_iou)
         valEpochAccuracy.append(val_acc)
 
-    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter)
+    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation="unet/")
 
     
  #TODO

@@ -54,14 +54,14 @@ def pixel_acc(pred, target):
     total_predictions = target.shape[0]*target.shape[1]*target.shape[2]
     return correct/total_predictions
 
-def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, earlyStop):
+def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, earlyStop, saveLocation=""):
 
     """
     Helper function for creating the plots
     earlyStop is the epoch at which early stop occurred and will correspond to the best model. e.g. earlyStop=-1 means the last epoch was the best one
     """
     
-    saveLocation = "./plots/"
+    saveLocation = "./plots/"+saveLocation
     if not os.path.exists(saveLocation):
         os.makedirs(saveLocation)
         print("Created Plots directory.")
