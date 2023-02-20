@@ -55,7 +55,7 @@ test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, nu
 
 ################################ Dataset Loading and processing end
 
-epochs =20
+epochs = 50
 
 n_class = 21
 
@@ -175,7 +175,13 @@ def train():
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
             trainOutputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
+            trainOutputs = F.softmax(trainOutputs)
             loss =  criterion(trainOutputs,labels)  #TODO  calculate loss
+#             print(trainOutputs.shape)
+            
+#             print(trainOutputs[0,0])
+#             print(labels[0])
+#             exit()
             loss.backward()
 
             with torch.no_grad():
@@ -228,7 +234,6 @@ def val(epoch):
     accuracy = []
 
     with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
-        epoch_loss = 0
         num_iter = 0
         for iter, (inputs, labels) in enumerate(val_loader):
             
@@ -237,15 +242,15 @@ def val(epoch):
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
 
-            outputs = F.log_softmax(fcn_model(inputs), dim=1)
-            valoutputs = fcn_model(inputs)
-            valloss = criterion(valoutputs, labels)
-            epoch_loss += valloss.item()
+            outputs = F.softmax(fcn_model(inputs), dim=1)
+#             valoutputs = fcn_model(inputs)
+            valloss = criterion(outputs, labels)
+            
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)
             mean_iou_scores += [np.mean(iou(pred, labels))]
             accuracy += [pixel_acc(pred, labels)]
-            losses += [epoch_loss]
+            losses += [valloss.item()]
 
     # print(mean_iou_scores, accuracy)
     print(f"=========> Loss at epoch {epoch} is {np.mean(losses)}")
@@ -273,9 +278,9 @@ def modelTest():
             inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
-            outputs = F.log_softmax(fcn_model(inputs), dim=1)
-            valoutputs = fcn_model(inputs)
-            valloss = criterion(valoutputs, labels)
+            outputs = F.softmax(fcn_model(inputs), dim=1)
+#             valoutputs = fcn_model(inputs)
+            valloss = criterion(outputs, labels)
             epoch_loss += valloss.item()
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)

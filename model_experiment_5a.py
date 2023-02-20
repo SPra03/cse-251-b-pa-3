@@ -129,7 +129,7 @@ class FCN(nn.Module):
         #  x9: torch.Size([16, 64, 112, 112]),
         # , x10: torch.Size([16, 32, 224, 224])
         
-        print(f" x: {x.shape},\n x1: {x1.shape},\n x2: {x2.shape},\n x3: {x3.shape}, \n x4: {x4.shape}, \n x5: {x5.shape}, \n x6: {x6.shape}, \n x7: {x7.shape}, \n x8: {x8.shape}, \n x9: {x9.shape}, \n, x10: {x10.shape}")
+#         print(f" x: {x.shape},\n x1: {x1.shape},\n x2: {x2.shape},\n x3: {x3.shape}, \n x4: {x4.shape}, \n x5: {x5.shape}, \n x6: {x6.shape}, \n x7: {x7.shape}, \n x8: {x8.shape}, \n x9: {x9.shape}, \n, x10: {x10.shape}")
 
         score = self.classifier(x10)
 
