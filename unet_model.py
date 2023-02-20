@@ -67,106 +67,80 @@ class UNET(nn.Module):
 
         self.classifier = nn.Conv2d(64, self.n_class, kernel_size=1)
 
-        
-        # self.deconv2 = nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        # self.bn2 = nn.BatchNorm2d(256)
-        # self.deconv3 = nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        # self.bn3 = nn.BatchNorm2d(128)
-        # self.deconv4 = nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        # self.bn4 = nn.BatchNorm2d(64)
-        # self.deconv5 = nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1)
-        # self.bn5 = nn.BatchNorm2d(32)
-        # self.classifier = nn.Conv2d(32, self.n_class, kernel_size=1)
 
     def forward(self, x):
         # print(f"input: {x.shape}")
         x1 = self.bnd1(self.relu(self.conv1(x)))
         # print(f"conv1: {x1.shape}")
-        x2 = self.bnd2(self.relu(self.conv2(x1)))
+        x1 = self.bnd2(self.relu(self.conv2(x1)))
         # print(f"conv2: {x1.shape}")
         
-        xp = self.pool1(x2)
+        xp = self.pool1(x1)
         # print(f"pool1: {xp.shape}")
-        x3 = self.bnd3(self.relu(self.conv3(xp)))
+        x2 = self.bnd3(self.relu(self.conv3(xp)))
         # print(f"conv3: {x3.shape}")
-        x4 = self.bnd4(self.relu(self.conv4(x3)))
+        x2 = self.bnd4(self.relu(self.conv4(x2)))
         # print(f"conv4: {x4.shape}")
         
-        xp = self.pool2(x4)
+        xp = self.pool2(x2)
         # print(f"pool2: {xp.shape}")
-        x5 = self.bnd5(self.relu(self.conv5(xp)))
+        x3 = self.bnd5(self.relu(self.conv5(xp)))
         # print(f"conv5: {x5.shape}")
-        x6 = self.bnd6(self.relu(self.conv6(x5)))
+        x3 = self.bnd6(self.relu(self.conv6(x3)))
         # print(f"conv6: {x6.shape}")
         
-        xp = self.pool3(x6)
+        xp = self.pool3(x3)
         # print(f"pool3: {xp.shape}")
-        x7 = self.bnd7(self.relu(self.conv7(xp)))
+        x4 = self.bnd7(self.relu(self.conv7(xp)))
         # print(f"conv7: {x7.shape}")
-        x8 = self.bnd8(self.relu(self.conv8(x7)))
+        x4 = self.bnd8(self.relu(self.conv8(x4)))
         # print(f"conv8: {x8.shape}")
 
-        xp = self.pool4(x8)
+        xp = self.pool4(x4)
         # print(f"pool4: {xp.shape}")
-        x9 = self.bnd9(self.relu(self.conv9(xp)))
+        x5 = self.bnd9(self.relu(self.conv9(xp)))
         # print(f"conv9: {x9.shape}")
-        x10 = self.bnd10(self.relu(self.conv10(x9)))
+        x5 = self.bnd10(self.relu(self.conv10(x5)))
         # print(f"conv10: {x10.shape}")
 
-        xd1 = self.bnd11(self.relu(self.deconv1(x10)))
+        xd = self.bnd11(self.relu(self.deconv1(x5)))
         # print(f"deconv1: {xd1.shape}")
 
-        xc1 = torch.cat((xd1,x8), dim=1)
+        xc = torch.cat((xd,x4), dim=1)
         # print(f"cat1: {xc1.shape}")
         
-        x11 = self.bn1(self.relu(self.conv11(xc1)))
+        x5 = self.bn1(self.relu(self.conv11(xc)))
         # print(f"conv11: {x11.shape}")
-        x12 = self.bnd12(self.relu(self.conv12(x11)))
+        x5 = self.bnd12(self.relu(self.conv12(x5)))
         # print(f"conv12: {x12.shape}")
 
-        xd2 = self.bn2(self.relu(self.deconv2(x12)))
+        xd = self.bn2(self.relu(self.deconv2(x5)))
         # print(f"deconv2: {xd2.shape}")
-        xc2 = torch.cat((xd2,x6), dim=1)
+        xc = torch.cat((xd,x3), dim=1)
         # print(f"cat2: {xc2.shape}")
-        x13 = self.bnd13(self.relu(self.conv13(xc2)))
+        x5 = self.bnd13(self.relu(self.conv13(xc)))
         # print(f"conv13: {x13.shape}")
-        x14 = self.bnd14(self.relu(self.conv14(x13)))
+        x5 = self.bnd14(self.relu(self.conv14(x5)))
         # print(f"conv14: {x14.shape}")
 
-        xd3 = self.bn3(self.relu(self.deconv3(x14)))
+        xd = self.bn3(self.relu(self.deconv3(x5)))
         # print(f"deconv3: {xd3.shape}")
-        xc3 = torch.cat((xd3,x4), dim=1)
+        xc = torch.cat((xd,x2), dim=1)
         # print(f"cat3: {xc3.shape}")
-        x15 = self.bnd15(self.relu(self.conv15(xc3)))
+        x5 = self.bnd15(self.relu(self.conv15(xc)))
         # print(f"conv15: {x15.shape}")
-        x16 = self.bnd16(self.relu(self.conv16(x15)))
+        x5 = self.bnd16(self.relu(self.conv16(x5)))
         # print(f"conv16: {x16.shape}")
 
-        xd4 = self.bn4(self.relu(self.deconv4(x16)))
+        xd = self.bn4(self.relu(self.deconv4(x5)))
         # print(f"deconv4: {xd4.shape}")
-        xc4 = torch.cat((xd4,x2), dim=1)
+        xc = torch.cat((xd,x1), dim=1)
         # print(f"cat4: {xc4.shape}")
-        x17 = self.bnd17(self.relu(self.conv17(xc4)))
+        x5 = self.bnd17(self.relu(self.conv17(xc)))
         # print(f"conv17: {x17.shape}")
-        x18 = self.bnd18(self.relu(self.conv18(x17)))
+        x5 = self.bnd18(self.relu(self.conv18(x5)))
         # print(f"conv18: {x18.shape}")
 
-        score = self.classifier(x18)
-
-
-
-
-
-
-
-        # x = self.bn1(self.relu(self.deconv1(x)))
-        # x = self.bn2(self.relu(self.deconv2(x)))
-        # x = self.bn3(self.relu(self.deconv3(x)))
-        # x = self.bn4(self.relu(self.deconv4(x)))
-        # x = self.bn5(self.relu(self.deconv5(x)))
-
-        # score = self.classifier(x)
-
-        
+        score = self.classifier(x5)
 
         return score  # size=(N, n_class, x.H/1, x.W/1)
