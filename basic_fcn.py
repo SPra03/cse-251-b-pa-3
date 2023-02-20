@@ -42,6 +42,7 @@ class FCN(nn.Module):
         x = self.bn4(self.relu(self.deconv4(x)))
         x = self.bn5(self.relu(self.deconv5(x)))
 
+        # print(F"size of x befre classifier: {x.size()}")
         score = self.classifier(x)
 
         return score  # size=(N, n_class, x.H/1, x.W/1)

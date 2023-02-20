@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 
 num_classes = 21
 ignore_label = 255
-root = './data'
+root = '../data'
 
 '''
 color map
