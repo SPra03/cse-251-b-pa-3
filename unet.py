@@ -27,7 +27,7 @@ def init_weights(m):
         torch.nn.init.normal_(m.bias.data) #xavier not applicable for biases
 
 
-
+################################ Dataset Loading and processing
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
 input_transform = transforms.Compose([
@@ -49,11 +49,16 @@ train_dataset =voc.VOC('train', transform=input_transform, target_transform=targ
 val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
 test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
 
-train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False)
-test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False)
+# Parameters to optimize the dataset loading, which was the slowest step
+NUM_WORKERS = 4
+PREFETCH_FACTOR = 2 # improves data transfer speed between GPU and CPU and reduces GPU wait time
+train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
 
-epochs =100
+################################ Dataset Loading and processing end
+
+epochs = 100
 
 n_class = 21
 
@@ -125,8 +130,6 @@ else:
 
 #####################
 
-
-
 fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
 
 #################################### Early stopping algorithm
@@ -152,7 +155,6 @@ def early_stopping(model, iter_num, early_stopping_rounds, best_loss, best_acc, 
 def train():
 
     torch.autograd.set_detect_anomaly(True)
-
     
     best_iou_score = 0.0
 
@@ -172,6 +174,7 @@ def train():
 
     for epoch in range(epochs):
 
+        # with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
         train_loss = []
         train_acc = []
         train_iou = []
@@ -187,6 +190,7 @@ def train():
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
             trainOutputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
+            trainOutputs = F.softmax(trainOutputs)
             loss =  criterion(trainOutputs,labels)  #TODO  calculate loss
             loss.backward()
 
@@ -202,7 +206,9 @@ def train():
             optimizer.step()
 
             if iter % 10 == 0:
-                print("epoch{}, iter{}, loss: {}".format(epoch, iter, loss.item()))
+                print(f"==> epoch{epoch}, iter{iter}, Train set=> loss: {train_loss[-1]}, IOU: {train_iou[-1]}, Acc: {train_acc[-1]}")
+
+        # print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
 
         print("Finish epoch {}, time elapsed {}".format(epoch, time.time() - ts))
 
@@ -213,7 +219,7 @@ def train():
                                                                 best_iter, val_loss, val_acc, val_iou, patience)
             print(f"Patience = {patience}")
             if patience==0:
-                print(f"Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
+                print(f"==> Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
         scheduler.step()
         print(f"Scheduler Learning Rate: {scheduler.get_last_lr()}")
@@ -238,7 +244,6 @@ def val(epoch):
     accuracy = []
 
     with torch.no_grad(): # we don't need to calculate the gradient in the validation/testing
-        epoch_loss = 0
         num_iter = 0
         for iter, (inputs, labels) in enumerate(val_loader):
             
@@ -247,20 +252,20 @@ def val(epoch):
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
 
-            outputs = F.log_softmax(fcn_model(inputs), dim=1)
-            valoutputs = fcn_model(inputs)
-            valloss = criterion(valoutputs, labels)
-            epoch_loss += valloss.item()
+            outputs = F.softmax(fcn_model(inputs), dim=1)
+#             valoutputs = fcn_model(inputs)
+            valloss = criterion(outputs, labels)
+            
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)
             mean_iou_scores += [np.mean(iou(pred, labels))]
             accuracy += [pixel_acc(pred, labels)]
-            losses += [epoch_loss]
+            losses += [valloss.item()]
 
     # print(mean_iou_scores, accuracy)
-    print(f"Loss at epoch: {epoch} is {np.mean(losses)}")
-    print(f"IoU at epoch: {epoch} is {np.mean(mean_iou_scores)}")
-    print(f"Pixel acc at epoch: {epoch} is {np.mean(accuracy)}")
+    print(f"=========> Loss at epoch {epoch} is {np.mean(losses)}")
+    print(f"=========> IoU at epoch {epoch} is {np.mean(mean_iou_scores)}")
+    print(f"=========> Pixel acc at epoch {epoch} is {np.mean(accuracy)}")
 
     fcn_model.train() #TURNING THE TRAIN MODE BACK ON TO ENABLE BATCHNORM/DROPOUT!!
 
@@ -283,9 +288,9 @@ def modelTest():
             inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
             labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
 
-            outputs = F.log_softmax(fcn_model(inputs), dim=1)
-            valoutputs = fcn_model(inputs)
-            valloss = criterion(valoutputs, labels)
+            outputs = F.softmax(fcn_model(inputs), dim=1)
+#             valoutputs = fcn_model(inputs)
+            valloss = criterion(outputs, labels)
             epoch_loss += valloss.item()
             num_iter += 1
             _, pred = torch.max(outputs, dim=1)
@@ -306,7 +311,7 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    # val(0)  # show the accuracy before training
+    val(0)  # show the accuracy before training
     train()
 
     print("Loading Best model from best_model.pth as per the IOU score and patience level defined for early stopping..")

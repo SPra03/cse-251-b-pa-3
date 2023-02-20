@@ -17,7 +17,7 @@ tar -xvf VOCtest_06-Nov-2007.tar
 
 ## Experiment vs Files
 
-#### Baseline with improvements
+#### Baseline with improvements 3, 4
 
 Files - train.py and basic_fcn.py
 
@@ -33,7 +33,7 @@ Files - model_experiment_5a.py and train_experiment_5a.py
 python train_experiment_5a.py
 ```
 
-#### Transfer learning
+#### Transfer learning (5b)
 
 Files - transfer.py and transfer_model.py
 
@@ -41,7 +41,7 @@ Files - transfer.py and transfer_model.py
 python transfer.py
 ```
 
-#### U-Net
+#### U-Net (5c)
 
 Files - unet.py and unet_model.py
 
