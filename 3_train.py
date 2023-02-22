@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from util import *
 # from torch.profiler import profile, record_function, ProfilerActivity
 
-saveLocation = "./plots/baseline/"
+saveLocation = "./plots/3_baseline/"
 if not os.path.exists(saveLocation):
     os.makedirs(saveLocation)
 
@@ -34,9 +34,9 @@ def init_weights(m):
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
 common_transform = transforms.Compose([
-    voc.MirrorFlip(0.5),
-    voc.Rotate(10),
-    voc.CenterCrop(180)
+    # voc.MirrorFlip(0.5),
+    # voc.Rotate(10),
+    # voc.CenterCrop(180)
 ])
 
 input_transform = transforms.Compose([
@@ -111,7 +111,7 @@ def getClassWeights(train_dataset):
 
     return imbalance_weights
 
-use_weights = True
+use_weights = False
 
 class WeightedCrossEntropyLoss(nn.Module):
     def __init__(self, weight=None):
@@ -171,7 +171,7 @@ def train():
     valEpochLoss = []
     valEpochAccuracy = []
     valEpochIOU = []
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30, eta_min=0, last_epoch=-1)
+    #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30, eta_min=0, last_epoch=-1)
 
     for epoch in range(epochs):
 
@@ -222,8 +222,8 @@ def train():
             if patience==0:
                 print(f"==> Training stopped early at epoch:{epoch}, best_loss = {best_loss}, best_acc = {best_acc}, best_iou_score = {best_iou_score}, best_iteration={best_iter}")
                 break
-        scheduler.step()
-        print(f"Scheduler Learning Rate: {scheduler.get_last_lr()}")
+        #scheduler.step()
+        #print(f"Scheduler Learning Rate: {scheduler.get_last_lr()}")
         
         ##### Plotting values
         trainEpochLoss.append(np.mean(np.asarray(train_loss)))

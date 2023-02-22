@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from util import *
 # from torch.profiler import profile, record_function, ProfilerActivity
 
-saveLocation = "./plots/baseline/"
+saveLocation = "./plots/4b_augmentation_annealing/"
 if not os.path.exists(saveLocation):
     os.makedirs(saveLocation)
 
@@ -111,7 +111,7 @@ def getClassWeights(train_dataset):
 
     return imbalance_weights
 
-use_weights = True
+use_weights = False
 
 class WeightedCrossEntropyLoss(nn.Module):
     def __init__(self, weight=None):

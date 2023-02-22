@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from util import *
 # from torch.profiler import profile, record_function, ProfilerActivity
 
-saveLocation = "./plots/baseline/"
+saveLocation = "./plots/4c_weights_augmentation_annealing/"
 if not os.path.exists(saveLocation):
     os.makedirs(saveLocation)
 
