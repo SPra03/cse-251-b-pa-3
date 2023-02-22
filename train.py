@@ -27,33 +27,38 @@ def init_weights(m):
 ################################ Dataset Loading and processing
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
+common_transform = transforms.Compose([
+    voc.MirrorFlip(0.5),
+    voc.Rotate(10),
+    voc.CenterCrop(180)
+])
+
 input_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10),            # rotation
     transforms.ToTensor(),
     transforms.Normalize(*mean_std)
 ])
 
 target_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10),            # rotation
-    MaskToTensor(),
+    MaskToTensor()
 ])
 
-train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform)
-val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
-test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
+augmented_train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
 
-# Parameters to optimize the dataset loading, which was the slowest step
-NUM_WORKERS = 4
-PREFETCH_FACTOR = 2 # improves data transfer speed between GPU and CPU and reduces GPU wait time
-train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
-test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+original_train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform)
+original_val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
+original_test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
 
-################################ Dataset Loading and processing end
+
+
+train_dataset = ConcatDataset([augmented_train_dataset, original_train_dataset])
+val_dataset = ConcatDataset([augmented_val_dataset, original_val_dataset])
+test_dataset = ConcatDataset([augmented_test_dataset, original_test_dataset])
+
+train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False)
+test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False)
 
 plotdir = "baseline/"
 

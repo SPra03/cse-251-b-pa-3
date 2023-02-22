@@ -1,6 +1,6 @@
 from basic_fcn import *
 import time
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 import torch
 import gc
 import voc
@@ -14,6 +14,7 @@ from util import *
 from torchvision import models
 from transfer_model import TransferModel
 from unet_model import UNET
+# from transfer_model import TransferModel
 
 
 class MaskToTensor(object):
@@ -22,7 +23,7 @@ class MaskToTensor(object):
 
 
 def init_weights(m):
-    if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+    if isinstance(m, nn.ConvTranspose2d) : #or isinstance(m, nn.Conv2d)
         torch.nn.init.xavier_uniform_(m.weight.data)
         torch.nn.init.normal_(m.bias.data) #xavier not applicable for biases
 
@@ -31,29 +32,33 @@ def init_weights(m):
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
 common_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10)            # rotation
+    voc.MirrorFlip(0.5),
+    voc.Rotate(10),
+    voc.CenterCrop(180)
 ])
 
 input_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10),            # rotation
     transforms.ToTensor(),
     transforms.Normalize(*mean_std)
 ])
 
 target_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10),            # rotation
-    MaskToTensor(),
+    MaskToTensor()
 ])
 
-train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
-val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
-test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+
+original_train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform)
+original_val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
+original_test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
+
+
+
+train_dataset = ConcatDataset([augmented_train_dataset, original_train_dataset])
+val_dataset = ConcatDataset([augmented_val_dataset, original_val_dataset])
+test_dataset = ConcatDataset([augmented_test_dataset, original_test_dataset])
 
 train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False)
@@ -63,7 +68,7 @@ epochs =100
 
 n_class = 21
 
-fcn_model = FCN(n_class=n_class)
+fcn_model = TransferModel(n_class=n_class)
 fcn_model.apply(init_weights)
 
 # model_resnet_34 = models.resnet34(pretrained=True)
@@ -79,9 +84,9 @@ fcn_model.apply(init_weights)
 # fcn_model = model_resnet_34
 
 device = "cpu"
-# if torch.cuda.is_available():
-#     device =   "cuda" # TODO determine which device to use (cuda or cpu)
-# print("Using device: ", device)
+if torch.cuda.is_available():
+    device =   "cuda" # TODO determine which device to use (cuda or cpu)
+print("Using device: ", device)
 
 # Imp Note!!! Currently Learning rate is kept very high to observe high changes in successive iterations. reduce it in final training
 optimizer = optim.Adam(fcn_model.parameters(), lr=0.005)# TODO choose an optimizer
@@ -186,6 +191,17 @@ def train():
         for iter, (inputs, labels) in enumerate(train_loader):
             # TODO  reset optimizer gradients
             optimizer.zero_grad()
+
+            if iter==1:
+                index = 3
+                plt.clf()
+                print(inputs.shape, labels.shape)
+                #print(pred[index, :, :].tolist(), "\n", labels[index, :, :].tolist())
+                plt.imshow(inputs[index, :, :, :].transpose(0, 2).transpose(0, 1).to("cpu"))
+                plt.savefig("./plots/image.png")
+                # plot_segmentation_map(pred[index, :, :], "prediction.png")
+                plot_segmentation_map(labels[index, :, :], "label.png")
+
 
 
             # both inputs and labels have to reside in the same device as the model's
@@ -298,6 +314,17 @@ def modelTest():
             mean_iou_scores += [np.mean(iou(pred, labels))]
             accuracy += [pixel_acc(pred, labels)]
             losses += [epoch_loss]
+
+            if iter<=5:
+                index = 3
+                plt.clf()
+                print(inputs.shape, pred.shape, labels.shape)
+                #print(pred[index, :, :].tolist(), "\n", labels[index, :, :].tolist())
+                plt.imshow(inputs[index, :, :, :].transpose(0, 2).transpose(0, 1).to("cpu"))
+                plt.savefig(f"./plots/{iter}_test_image.png")
+                plot_segmentation_map(pred[index, :, :], f"{iter}_test_prediction.png")
+                plot_segmentation_map(labels[index, :, :], f"{iter}_test_label.png")
+
 
     # print(mean_iou_scores, accuracy)
     print("Test Performance")

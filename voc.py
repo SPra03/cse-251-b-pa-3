@@ -2,10 +2,11 @@ import os
 from PIL import Image
 from torch.utils import data
 import torchvision.transforms as transforms
+import random
 
 num_classes = 21
 ignore_label = 255
-root = './data'
+root = '../data'
 
 '''
 color map
@@ -51,14 +52,60 @@ def make_dataset(mode):
     return items
 
 
+
+class MirrorFlip(object):
+    def __init__(self, probability = 0.5):
+        self.hFlip = transforms.functional.hflip
+        self.prob = probability
+    def __call__(self, sample):
+        image, label = sample
+        if random.random() > self.prob:
+            # print(f"Flip")
+            img = self.hFlip(image)
+            lab = self.hFlip(label)
+        else:
+            img = image
+            lab = label
+        return img, lab
+
+class Rotate(object):
+    def __init__(self, degree = 10):
+        self.degree = degree
+        self.rotation = transforms.functional.rotate
+    def __call__(self, sample):
+        # print(f"Rotate")
+        image, label = sample
+        imageDegree = self.degree * random.random() - self.degree/2
+        img = self.rotation(image, angle=imageDegree)
+        lab = self.rotation(label, angle=imageDegree)
+        return img, lab
+
+class CenterCrop(object):
+    def __init__(self, size):
+        self.size = size
+        self.transform = transforms.CenterCrop(size)
+    def __call__(self, sample):
+        # print(f"CenterCrop")
+        image, label = sample
+        img = self.transform(image)
+        label = self.transform(label)
+        img = transforms.functional.resize(img, 224)
+        label = transforms.functional.resize(label, 224)
+        return img, label
+
+
+
+
+
 class VOC(data.Dataset):
-    def __init__(self, mode, transform=None, target_transform=None):
+    def __init__(self, mode, transform=None, target_transform=None, common_transform=None):
         self.imgs = make_dataset(mode)
         if len(self.imgs) == 0:
             raise RuntimeError('Found 0 images, please check the data set')
         self.mode = mode
         self.transform = transform
         self.target_transform = target_transform
+        self.common_transform = common_transform
         self.width = 224
         self.height = 224
 
@@ -67,6 +114,9 @@ class VOC(data.Dataset):
         img_path, mask_path = self.imgs[index]
         img = Image.open(img_path).convert('RGB').resize((self.width, self.height))
         mask = Image.open(mask_path).resize((self.width, self.height))
+
+        if self.common_transform is not None:
+            img, mask = self.common_transform((img,mask)) 
 
         if self.transform is not None:
             img = self.transform(img)
