@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from util import *
 # from torch.profiler import profile, record_function, ProfilerActivity
 
-saveLocation = "./plots/custom_5a/"
+saveLocation = "./plots/5a_custom/"
 if not os.path.exists(saveLocation):
     os.makedirs(saveLocation)
 

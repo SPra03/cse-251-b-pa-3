@@ -10,9 +10,9 @@ import numpy as np
 from torch import optim
 import torch.nn.functional as F
 from util import *
-from unet_model import UNET
+from unet_model import *
 
-saveLocation = "./plots/unet/"
+saveLocation = "./plots/5c_unet/"
 if not os.path.exists(saveLocation):
     os.makedirs(saveLocation)
 

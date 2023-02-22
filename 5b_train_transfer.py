@@ -11,9 +11,9 @@ from torch import optim
 import torch.nn.functional as F
 from util import *
 from torchvision import models
-from transfer_model import TransferModel
+from transfer_model import *
 
-saveLocation = "./plots/transfer/"
+saveLocation = "./plots/5b_transfer/"
 if not os.path.exists(saveLocation):
     os.makedirs(saveLocation)
 
