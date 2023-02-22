@@ -19,34 +19,6 @@ def iou(pred, target, n_classes = 21):
     ious = np.array(ious)
     return ious
 
-#  Average over images
-# def iou(pred, target, n_classes = 21):
-#     target[target==255] = 0
-
-#     image_ious = []
-
-#     for img in range(pred.shape[0]):
-
-#         ious = []
-
-#         pred_img = pred[img, :, :]
-#         target_img = target[img, :, :]
-
-#         for cls in range(n_classes):
-#             intersection = torch.sum((pred_img == cls) & (target_img == cls)).item()# TP
-#             union = torch.sum(pred_img == cls) + torch.sum(target_img == cls) - intersection# (TP + FP) + (TP + FN) - TP
-#             union = union.item()
-
-#             if torch.sum(pred_img == cls)!=0:
-#                 ious.append(intersection/union)
-        
-#         ious = np.array(ious)
-#         image_ious.append(np.mean(ious))
-#     image_ious = np.array(image_ious)
-
-#     return image_ious
-
-
 def pixel_acc(pred, target):
     target[target==255] = 0
     
@@ -54,14 +26,14 @@ def pixel_acc(pred, target):
     total_predictions = target.shape[0]*target.shape[1]*target.shape[2]
     return correct/total_predictions
 
-def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, earlyStop, saveLocation=""):
+def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, earlyStop, saveLocation="./plots/"):
 
     """
     Helper function for creating the plots
     earlyStop is the epoch at which early stop occurred and will correspond to the best model. e.g. earlyStop=-1 means the last epoch was the best one
     """
     
-    saveLocation = "./plots/"+saveLocation
+    # saveLocation = "./plots/"+saveLocation
     if not os.path.exists(saveLocation):
         os.makedirs(saveLocation)
         print("Created Plots directory.")
@@ -120,8 +92,16 @@ def plot_segmentation_map(segmentation_map, fname):
     # Plot the segmentation map using the color map
     plt.imshow(segmentation_map, cmap=cmap)
     plt.axis('off')
-    # plt.show()
-    plt.savefig("./plots/"+fname)
+    plt.savefig(fname)
+
+def plot_image_segMaps(inputs, pred, labels, iter, index, saveLocation):
+    plt.clf()
+    # print(inputs.shape, pred.shape, labels.shape)
+    #print(pred[index, :, :].tolist(), "\n", labels[index, :, :].tolist())
+    plt.imshow(inputs[index, :, :, :].transpose(0, 2).transpose(0, 1).to("cpu"))
+    plt.savefig(saveLocation+f"{iter}_image.png")
+    plot_segmentation_map(pred[index, :, :], saveLocation+f"{iter}_prediction.png")
+    plot_segmentation_map(labels[index, :, :], saveLocation+f"{iter}_label.png")
 
 if __name__=='__main__':
     # to test the utilities

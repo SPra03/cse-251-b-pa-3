@@ -1,6 +1,6 @@
 from basic_fcn import *
 import time
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 import torch
 import gc
 import voc
@@ -12,6 +12,12 @@ from torch import optim
 import torch.nn.functional as F
 from util import *
 # from torch.profiler import profile, record_function, ProfilerActivity
+
+saveLocation = "./plots/baseline/"
+if not os.path.exists(saveLocation):
+    os.makedirs(saveLocation)
+
+####################### Helper functions
 
 class MaskToTensor(object):
     def __call__(self, img):
@@ -56,11 +62,14 @@ train_dataset = ConcatDataset([augmented_train_dataset, original_train_dataset])
 val_dataset = ConcatDataset([augmented_val_dataset, original_val_dataset])
 test_dataset = ConcatDataset([augmented_test_dataset, original_test_dataset])
 
-train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False)
-test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False)
+# Parameters to optimize the dataset loading, which was the slowest step
+NUM_WORKERS = 4
+PREFETCH_FACTOR = 2 # improves data transfer speed between GPU and CPU and reduces GPU wait time
+train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
 
-plotdir = "baseline/"
+#################################### End of Dataset Loading and processing
 
 epochs = 50
 
@@ -132,7 +141,7 @@ def early_stopping(model, iter_num, early_stopping_rounds, best_loss, best_acc, 
     if iou_score<=best_iou:
         patience-=1
     else:
-        torch.save(fcn_model.state_dict(), "best_model.pth")
+        torch.save(fcn_model.state_dict(), saveLocation+"best_model.pth")
         patience = early_stopping_rounds
         best_loss = loss
         best_acc = acc
@@ -224,7 +233,7 @@ def train():
         valEpochIOU.append(val_iou)
         valEpochAccuracy.append(val_acc)
 
-    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation=plotdir)
+    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation=saveLocation)
 
     
  #TODO
@@ -288,15 +297,9 @@ def modelTest():
             accuracy += [pixel_acc(pred, labels)]
             losses += [valloss.item()]
 
-            if iter==1:
+            if iter<=5:
                 index = 3
-                plt.clf()
-                print(inputs.shape, pred.shape, labels.shape)
-                #print(pred[index, :, :].tolist(), "\n", labels[index, :, :].tolist())
-                plt.imshow(inputs[index, :, :, :].transpose(0, 2).transpose(0, 1).to("cpu"))
-                plt.savefig("./plots/image.png")
-                plot_segmentation_map(pred[index, :, :], "prediction.png")
-                plot_segmentation_map(labels[index, :, :], "label.png")
+                plot_image_segMaps(inputs, pred, labels, iter, index, saveLocation=saveLocation)
 
     # print(mean_iou_scores, accuracy)
     print("Test Performance")
@@ -311,14 +314,19 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    val(0)  # show the accuracy before training
-    train()
+    import sys
+    with open(saveLocation+'output.txt', 'w') as sys.stdout:
 
-    print("Loading Best model from best_model.pth as per the IOU score and patience level defined for early stopping..")
-    fcn_model.load_state_dict(torch.load("best_model.pth"))
+        if use_weights:
+            print("Imbalance weights are: ", imbalance_weights)
+        val(0)  # show the accuracy before training
+        train()
 
-    modelTest()
+        print(f"Loading Best model from {saveLocation}best_model.pth as per the IOU score and patience level defined for early stopping..")
+        fcn_model.load_state_dict(torch.load(saveLocation+"best_model.pth"))
 
-    # housekeeping
-    gc.collect()
-    torch.cuda.empty_cache()
+        modelTest()
+
+        # housekeeping
+        gc.collect()
+        torch.cuda.empty_cache()

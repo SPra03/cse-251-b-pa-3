@@ -6,7 +6,7 @@ import random
 
 num_classes = 21
 ignore_label = 255
-root = '../data'
+root = './data'
 
 '''
 color map
