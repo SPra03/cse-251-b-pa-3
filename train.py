@@ -283,6 +283,16 @@ def modelTest():
             accuracy += [pixel_acc(pred, labels)]
             losses += [valloss.item()]
 
+            if iter==1:
+                index = 3
+                plt.clf()
+                print(inputs.shape, pred.shape, labels.shape)
+                #print(pred[index, :, :].tolist(), "\n", labels[index, :, :].tolist())
+                plt.imshow(inputs[index, :, :, :].transpose(0, 2).transpose(0, 1).to("cpu"))
+                plt.savefig("./plots/image.png")
+                plot_segmentation_map(pred[index, :, :], "prediction.png")
+                plot_segmentation_map(labels[index, :, :], "label.png")
+
     # print(mean_iou_scores, accuracy)
     print("Test Performance")
     print(f"Test Loss: is {np.mean(losses)}")

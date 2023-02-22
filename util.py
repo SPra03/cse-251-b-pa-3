@@ -78,7 +78,7 @@ def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEp
     ax1.set_ylabel('Cross Entropy Loss', fontsize=35.0)
     ax1.legend(loc="upper right", fontsize=35.0)
     plt.savefig(saveLocation+"loss.png")
-    # plt.show()
+    plt.close(fig1)
 
     fig2, ax2 = plt.subplots(figsize=((24, 12)))
     ax2.plot(epochs, trainEpochAccuracy, 'r', label="Training Accuracy")
@@ -91,7 +91,7 @@ def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEp
     ax2.set_ylabel('Accuracy', fontsize=35.0)
     ax2.legend(loc="lower right", fontsize=35.0)
     plt.savefig(saveLocation+"accuracy.png")
-    # plt.show()
+    plt.close(fig2)
 
     fig2, ax2 = plt.subplots(figsize=((24, 12)))
     ax2.plot(epochs, trainEpochIOU, 'r', label="Training IOU")
@@ -104,10 +104,28 @@ def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEp
     ax2.set_ylabel('IOU Score', fontsize=35.0)
     ax2.legend(loc="lower right", fontsize=35.0)
     plt.savefig(saveLocation+"iou.png")
-    # plt.show()
+    plt.close(fig2)
 
+def plot_segmentation_map(segmentation_map, fname):
+    segmentation_map = segmentation_map.to("cpu")
+    # Create a color map from the given palette
+    palette = [0, 0, 0, 128, 0, 0, 0, 128, 0, 128, 128, 0, 0, 0, 128, 128, 0, 128, 0, 128, 128,
+           128, 128, 128, 64, 0, 0, 192, 0, 0, 64, 128, 0, 192, 128, 0, 64, 0, 128, 192, 0, 128,
+           64, 128, 128, 192, 128, 128, 0, 64, 0, 128, 64, 0, 0, 192, 0, 128, 192, 0, 0, 64, 128]
+    #3 values- R,G,B for every class. First 3 values for class 0, next 3 for
+    #class 1 and so on......
+    plt.clf()
+    cmap = plt.cm.colors.ListedColormap(np.array(palette).reshape(-1, 3)/255)
+    
+    # Plot the segmentation map using the color map
+    plt.imshow(segmentation_map, cmap=cmap)
+    plt.axis('off')
+    # plt.show()
+    plt.savefig("./plots/"+fname)
 
 if __name__=='__main__':
     # to test the utilities
-    acc = iou(torch.zeros(16, 224, 224), torch.zeros(16, 224, 224))
+    tensor = torch.zeros(16, 224, 224)
+    acc = iou(tensor, tensor)
     print(f"Pixel Accuracy: {acc}")
+    plot_segmentation_map(tensor[0, :, :])
