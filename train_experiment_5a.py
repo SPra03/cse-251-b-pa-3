@@ -1,6 +1,6 @@
 from model_experiment_5a import *
 import time
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 import torch
 import gc
 import voc
@@ -12,6 +12,12 @@ from torch import optim
 import torch.nn.functional as F
 from util import *
 # from torch.profiler import profile, record_function, ProfilerActivity
+
+saveLocation = "./plots/custom_5a/"
+if not os.path.exists(saveLocation):
+    os.makedirs(saveLocation)
+
+####################### Helper functions
 
 class MaskToTensor(object):
     def __call__(self, img):
@@ -27,24 +33,34 @@ def init_weights(m):
 ################################ Dataset Loading and processing
 mean_std = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
+common_transform = transforms.Compose([
+    voc.MirrorFlip(0.5),
+    voc.Rotate(10),
+    voc.CenterCrop(180)
+])
+
 input_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10),            # rotation
     transforms.ToTensor(),
     transforms.Normalize(*mean_std)
 ])
 
 target_transform = transforms.Compose([
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    standard_transforms.RandomRotation(10),            # rotation
-    MaskToTensor(),
+    MaskToTensor()
 ])
 
-train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform)
-val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
-test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
+augmented_train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+augmented_test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform, common_transform=common_transform)
+
+original_train_dataset =voc.VOC('train', transform=input_transform, target_transform=target_transform)
+original_val_dataset = voc.VOC('val', transform=input_transform, target_transform=target_transform)
+original_test_dataset = voc.VOC('test', transform=input_transform, target_transform=target_transform)
+
+
+
+train_dataset = ConcatDataset([augmented_train_dataset, original_train_dataset])
+val_dataset = ConcatDataset([augmented_val_dataset, original_val_dataset])
+test_dataset = ConcatDataset([augmented_test_dataset, original_test_dataset])
 
 # Parameters to optimize the dataset loading, which was the slowest step
 NUM_WORKERS = 4
@@ -53,7 +69,7 @@ train_loader = DataLoader(dataset=train_dataset, batch_size= 16, shuffle=True, n
 val_loader = DataLoader(dataset=val_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
 test_loader = DataLoader(dataset=test_dataset, batch_size= 16, shuffle=False, num_workers=NUM_WORKERS, prefetch_factor=PREFETCH_FACTOR, pin_memory=True)
 
-################################ Dataset Loading and processing end
+#################################### End of Dataset Loading and processing
 
 epochs = 50
 
@@ -125,7 +141,7 @@ def early_stopping(model, iter_num, early_stopping_rounds, best_loss, best_acc, 
     if iou_score<=best_iou:
         patience-=1
     else:
-        torch.save(fcn_model.state_dict(), "best_model.pth")
+        torch.save(fcn_model.state_dict(), saveLocation+"best_model.pth")
         patience = early_stopping_rounds
         best_loss = loss
         best_acc = acc
@@ -177,11 +193,6 @@ def train():
             trainOutputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
             trainOutputs = F.softmax(trainOutputs)
             loss =  criterion(trainOutputs,labels)  #TODO  calculate loss
-#             print(trainOutputs.shape)
-            
-#             print(trainOutputs[0,0])
-#             print(labels[0])
-#             exit()
             loss.backward()
 
             with torch.no_grad():
@@ -222,7 +233,7 @@ def train():
         valEpochIOU.append(val_iou)
         valEpochAccuracy.append(val_acc)
 
-    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation="custom_5a/")
+    plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation=saveLocation)
 
     
  #TODO
@@ -286,6 +297,10 @@ def modelTest():
             accuracy += [pixel_acc(pred, labels)]
             losses += [valloss.item()]
 
+            if iter<=5:
+                index = 3
+                plot_image_segMaps(inputs, pred, labels, iter, index, saveLocation=saveLocation)
+
     # print(mean_iou_scores, accuracy)
     print("Test Performance")
     print(f"Test Loss: is {np.mean(losses)}")
@@ -299,14 +314,19 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    # val(0)  # show the accuracy before training
-    train()
+    import sys
+    with open(saveLocation+'output.txt', 'w') as sys.stdout:
 
-    print("Loading Best model from best_model.pth as per the IOU score and patience level defined for early stopping..")
-    fcn_model.load_state_dict(torch.load("best_model.pth"))
+        if use_weights:
+            print("Imbalance weights are: ", imbalance_weights)
+        val(0)  # show the accuracy before training
+        train()
 
-    modelTest()
+        print(f"Loading Best model from {saveLocation}best_model.pth as per the IOU score and patience level defined for early stopping..")
+        fcn_model.load_state_dict(torch.load(saveLocation+"best_model.pth"))
 
-    # housekeeping
-    gc.collect()
-    torch.cuda.empty_cache()
+        modelTest()
+
+        # housekeeping
+        gc.collect()
+        torch.cuda.empty_cache()
