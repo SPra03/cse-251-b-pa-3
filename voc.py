@@ -21,7 +21,10 @@ palette = [0, 0, 0, 128, 0, 0, 0, 128, 0, 128, 128, 0, 0, 0, 128, 128, 0, 128, 0
            64, 128, 128, 192, 128, 128, 0, 64, 0, 128, 64, 0, 0, 192, 0, 128, 192, 0, 0, 64, 128]  #3 values- R,G,B for every class. First 3 values for class 0, next 3 for
 #class 1 and so on......
 
-
+'''
+Depending on the mode, train or val or test, the function reads the train.txt, val.txt and test.txt files and returns a list of tuples of the form
+(image_path, mask_path) for each image in the dataset, where image_path is the path to the image and mask_path is the path to the mask for that image. 
+'''
 def make_dataset(mode):
     assert mode in ['train', 'val', 'test']
     items = []
@@ -52,7 +55,9 @@ def make_dataset(mode):
     return items
 
 
-
+'''
+MirrorFlip, Rotate and CenterCrop are custom transforms that are used to augment the dataset.
+'''
 class MirrorFlip(object):
     def __init__(self, probability = 0.5):
         self.hFlip = transforms.functional.hflip
@@ -95,7 +100,11 @@ class CenterCrop(object):
 
 
 
-
+'''
+The class VOC is a subclass of the class torch.utils.data.Dataset. It overrides the __len__ and __getitem__ methods.
+The __len__ method returns the length of the dataset, i.e. the number of images in the dataset.
+The __getitem__ method returns the image and the mask for the given index.
+'''
 
 class VOC(data.Dataset):
     def __init__(self, mode, transform=None, target_transform=None, common_transform=None):

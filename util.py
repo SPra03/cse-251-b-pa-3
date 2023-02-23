@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import os
 
 # Average over classes
+'''
+returns the mean IOU for the batch
+'''
 def iou(pred, target, n_classes = 21):
     target[target==255] = 0
 
@@ -19,6 +22,9 @@ def iou(pred, target, n_classes = 21):
     ious = np.array(ious)
     return ious
 
+'''
+returns pixel accuracy for the batch
+'''
 def pixel_acc(pred, target):
     target[target==255] = 0
     
@@ -26,6 +32,9 @@ def pixel_acc(pred, target):
     total_predictions = target.shape[0]*target.shape[1]*target.shape[2]
     return correct/total_predictions
 
+'''
+Used to plot the loss, accuracy and IOU score for the training and validation set
+'''
 def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, earlyStop, saveLocation="./plots/"):
 
     """
@@ -78,6 +87,10 @@ def plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEp
     plt.savefig(saveLocation+"iou.png")
     plt.close(fig2)
 
+
+'''
+Used to plot the segmentation map
+'''
 def plot_segmentation_map(segmentation_map, fname):
     segmentation_map = segmentation_map.to("cpu")
     # Create a color map from the given palette
@@ -94,6 +107,9 @@ def plot_segmentation_map(segmentation_map, fname):
     plt.axis('off')
     plt.savefig(fname)
 
+'''
+Used to plot the image, prediction and label
+'''
 def plot_image_segMaps(inputs, pred, labels, iter, index, saveLocation):
     plt.clf()
     # print(inputs.shape, pred.shape, labels.shape)
