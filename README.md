@@ -48,3 +48,10 @@ Files - unet.py and unet_model.py
 ```bash
 python train.py
 ```
+
+
+### Zipping plots
+
+```bash
+tar -czvf DL_PA3.tar.gz --exclude='*.pth' plots/
+```
