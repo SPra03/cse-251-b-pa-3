@@ -80,11 +80,11 @@ fcn_model.apply(init_weights)
 
 device = "cpu"
 if torch.cuda.is_available():
-    device =   "cuda" # TODO determine which device to use (cuda or cpu)
+    device =   "cuda" #  determine which device to use (cuda or cpu)
 print("Using device: ", device)
 
 # Imp Note!!! Currently Learning rate is kept very high to observe high changes in successive iterations. reduce it in final training
-optimizer = optim.Adam(fcn_model.parameters(), lr=0.005)# TODO choose an optimizer
+optimizer = optim.Adam(fcn_model.parameters(), lr=0.005)#  choose an optimizer
 
 #################################### Loss criterion
 
@@ -127,11 +127,11 @@ if use_weights:
     imbalance_weights = torch.Tensor(imbalance_weights).to(device)
     criterion = WeightedCrossEntropyLoss(weight=imbalance_weights)
 else:
-    criterion = torch.nn.CrossEntropyLoss()# TODO Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
+    criterion = torch.nn.CrossEntropyLoss()#  Choose an appropriate loss function from https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html
 
 #####################
 
-fcn_model =  fcn_model.to(device)# TODO transfer the model to the device
+fcn_model =  fcn_model.to(device)#  transfer the model to the device
 
 #################################### Early stopping algorithm
 use_early_stopping = True
@@ -152,7 +152,7 @@ def early_stopping(model, iter_num, early_stopping_rounds, best_loss, best_acc, 
 
 #################################### Early stopping algorithm end
 
-# TODO
+
 def train():
 
     torch.autograd.set_detect_anomaly(True)
@@ -182,17 +182,17 @@ def train():
 
         ts = time.time()
         for iter, (inputs, labels) in enumerate(train_loader):
-            # TODO  reset optimizer gradients
+            #   reset optimizer gradients
             optimizer.zero_grad()
 
 
             # both inputs and labels have to reside in the same device as the model's
-            inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
-            labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
+            inputs =  inputs.to(device)#  transfer the input to the same device as the model's
+            labels =   labels.to(device)#  transfer the labels to the same device as the model's
 
-            trainOutputs =  fcn_model.forward(inputs) # TODO  Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
+            trainOutputs =  fcn_model.forward(inputs) #   Compute outputs. we will not need to transfer the output, it will be automatically in the same device as the model's!
             trainOutputs = F.softmax(trainOutputs)
-            loss =  criterion(trainOutputs,labels)  #TODO  calculate loss
+            loss =  criterion(trainOutputs,labels)  #  calculate loss
             loss.backward()
 
             with torch.no_grad():
@@ -236,7 +236,7 @@ def train():
     plots(trainEpochLoss, trainEpochAccuracy, trainEpochIOU, valEpochLoss, valEpochAccuracy, valEpochIOU, best_iter, saveLocation=saveLocation)
 
     
- #TODO
+
 def val(epoch):
     fcn_model.eval() # Put in eval mode (disables batchnorm/dropout) !
     
@@ -249,8 +249,8 @@ def val(epoch):
         for iter, (inputs, labels) in enumerate(val_loader):
             
             # both inputs and labels have to reside in the same device as the model's
-            inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
-            labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
+            inputs =  inputs.to(device)#  transfer the input to the same device as the model's
+            labels =   labels.to(device)#  transfer the labels to the same device as the model's
 
 
             outputs = F.softmax(fcn_model(inputs), dim=1)
@@ -272,7 +272,7 @@ def val(epoch):
 
     return np.mean(losses), np.mean(mean_iou_scores), np.mean(accuracy)
 
- #TODO
+
 def modelTest():
     fcn_model.eval()  # Put in eval mode (disables batchnorm/dropout) !
 
@@ -285,8 +285,8 @@ def modelTest():
         for iter, (inputs, labels) in enumerate(test_loader):
             
             # both inputs and labels have to reside in the same device as the model's
-            inputs =  inputs.to(device)# TODO transfer the input to the same device as the model's
-            labels =   labels.to(device)# TODO transfer the labels to the same device as the model's
+            inputs =  inputs.to(device)#  transfer the input to the same device as the model's
+            labels =   labels.to(device)#  transfer the labels to the same device as the model's
 
             outputs = F.softmax(fcn_model(inputs), dim=1)
 #             valoutputs = fcn_model(inputs)
