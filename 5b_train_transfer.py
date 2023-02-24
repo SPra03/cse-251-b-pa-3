@@ -326,19 +326,16 @@ def modelTest():
 
 if __name__ == "__main__":
 
-    import sys
-    with open(saveLocation+'output.txt', 'w') as sys.stdout:
+    if use_weights:
+        print("Imbalance weights are: ", imbalance_weights)
+    val(0)  # show the accuracy before training
+    train()
 
-        if use_weights:
-            print("Imbalance weights are: ", imbalance_weights)
-        val(0)  # show the accuracy before training
-        train()
+    print(f"Loading Best model from {saveLocation}best_model.pth as per the IOU score and patience level defined for early stopping..")
+    fcn_model.load_state_dict(torch.load(saveLocation+"best_model.pth"))
 
-        print(f"Loading Best model from {saveLocation}best_model.pth as per the IOU score and patience level defined for early stopping..")
-        fcn_model.load_state_dict(torch.load(saveLocation+"best_model.pth"))
+    modelTest()
 
-        modelTest()
-
-        # housekeeping
-        gc.collect()
-        torch.cuda.empty_cache()
+    # housekeeping
+    gc.collect()
+    torch.cuda.empty_cache()
